@@ -18,6 +18,7 @@ export default function Leads() {
   const [editLead, setEditLead] = useState(null);
   const { user } = useAuth();
   const [assignLead, setAssignLead] = useState(null);
+  const enableDebug = (import.meta.env.MODE !== "production" && import.meta.env.VITE_ENABLE_DEBUG === "true")   || (user && (user.role === "ADMIN" || user.role === "MANAGER"));
 
   const params = useMemo(() => ({
     page, limit: 10, q: q || undefined, status: status || undefined, mine: mine ? "true" : undefined,
@@ -34,6 +35,7 @@ export default function Leads() {
   const fetchLeads = async () => {
     const { data } = await api.get("/api/leads", { params });
     setData(data);
+    setPage(data.page || 1);
   };
  
   const saveLead = async (id, payload) => {
@@ -48,7 +50,8 @@ export default function Leads() {
     await fetchLeads();
   };
 
-  useEffect(() => { fetchLeads(); }, [JSON.stringify(params)]);
+  // useEffect(() => { fetchLeads(); }, [JSON.stringify(params)]);
+  useEffect(() => { fetchLeads(); }, [page, q, status, mine]);
   useEffect(() => {
     if (!events.length) return;
     const recent = events[0].name;
@@ -203,10 +206,16 @@ export default function Leads() {
         />
       )}
 
-      {/* Event log */}
+      {/*  Event log
       <div className="mt-4">
         <EventLog connected={connected} events={events} />
-      </div>
+      </div> */ }
+      {enableDebug && (
+      <div className="mt-4">
+          {/* limit events forwarded to the UI to last 100 entries to avoid bloat */}
+          <EventLog connected={connected} events={(events || []).slice(-100)} />
+        </div>
+      )}
     </div>
   );
 
