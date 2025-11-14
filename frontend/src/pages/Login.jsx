@@ -3,9 +3,9 @@ import { useAuth } from "../store/auth";
 
 export default function Login({ onLoggedIn }) {
   const { login, loading, error, register } = useAuth();
-  const [email, setEmail] = useState("admin1@example.com");
-  const [password, setPassword] = useState("secret123");
-  const [name, setName] = useState("Admin One");
+  const [email, setEmail] = useState("newuser@example.com");
+  const [password, setPassword] = useState("asecret123");
+  const [name, setName] = useState("user");
   const [mode, setMode] = useState("login"); // or 'register'
 
   const submit = async (e) => {
@@ -14,7 +14,7 @@ export default function Login({ onLoggedIn }) {
       const ok = await login(email, password);
       if (ok) onLoggedIn?.();
     } else {
-      const created = await register({ name, email, password, role: "ADMIN" });
+      const created = await register({ name, email, password });
       if (created) alert("Registered! Now switch to login.");
     }
   };

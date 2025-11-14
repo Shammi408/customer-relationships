@@ -13,10 +13,35 @@ const RegisterSchema = z.object({
   password: z.string().min(6),
   role: z.enum(["ADMIN", "MANAGER", "SALES_EXEC"]).optional(), // default server-side
 });
+
+async function getRequesterRoleFromHeader(req) {
+  // returns role string or null
+  try {
+    const auth = req.headers.authorization;
+    if (!auth) return null;
+    const token = auth.split(" ")[1];
+    if (!token) return null;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return decoded?.role || null;
+  } catch (err) {
+    return null;
+  }
+}
 //User registration route
 router.post("/register", async (req, res) => {
   try {
     const data = RegisterSchema.parse(req.body); //get data
+    // If a role was requested, only allow it when the requester is an authenticated ADMIN
+    let roleToAssign = "SALES_EXEC"; // safe default
+    if (data.role) {
+      const requesterRole = await getRequesterRoleFromHeader(req);
+      if (requesterRole === "ADMIN") {
+        roleToAssign = data.role;
+      } else {
+        // Optionally log attempted role escalation
+        console.warn("Attempt to set role on public register ignored. Requester role:", requesterRole);
+      }
+    }
     const existing = await prisma.user.findUnique({ where: { email: data.email } }); //check if email exists
     if (existing) return res.status(409).json({ error: "Email already in use" }); //conflict if exists
 

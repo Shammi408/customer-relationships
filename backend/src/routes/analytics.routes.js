@@ -49,7 +49,7 @@ router.get("/activities-7d", auth, requireRole("ADMIN", "MANAGER"), async (_req,
  *  - activities7d: [{date,count}]
  *  - leads30d: [{date,count}] (lead creations per day)
  */
-// Role-aware overview (robust, debug-friendly)
+// Role-aware overview route shows everything or scoped to user
 router.get("/overview", auth, async (req, res) => {
   try {
     const isSales = req.user.role === "SALES_EXEC";
@@ -63,7 +63,7 @@ router.get("/overview", auth, async (req, res) => {
       whereLeads.ownerId = req.user.id;
     }
 
-    // 1) counts by status (safe: uses lead.count scoped by whereLeads)
+    // counts by status (safe: uses lead.count scoped by whereLeads)
     const statuses = ["NEW", "CONTACTED", "QUALIFIED", "WON", "LOST"];
     const countsByStatus = await Promise.all(
       statuses.map(async (s) => ({
@@ -85,7 +85,7 @@ router.get("/overview", auth, async (req, res) => {
     };
     const winRate = total ? totals.won / total : 0;
 
-    // 2) get lead IDs in scope (if scope limits exist)
+    //  get lead IDs in scope (if scope limits exist)
     let leadIdsInScope = null;
     if (whereLeads.ownerId) {
       const leadRows = await prisma.lead.findMany({
@@ -95,7 +95,7 @@ router.get("/overview", auth, async (req, res) => {
       leadIdsInScope = leadRows.map(r => r.id);
     }
 
-    // 3) activities in last 7 days
+    //  activities in last 7 days
     const since7 = new Date();
     since7.setDate(since7.getDate() - 6);
 
@@ -122,7 +122,7 @@ router.get("/overview", auth, async (req, res) => {
       activities7d.push({ date: k, count: b7[k] || 0 });
     }
 
-    // 4) leads created last 30 days (scoped with leadIdsInScope or whereLeads)
+    //  leads created last 30 days (scoped with leadIdsInScope or whereLeads)
     const since30 = new Date();
     since30.setDate(since30.getDate() - 29);
 
@@ -164,7 +164,7 @@ router.get("/overview", auth, async (req, res) => {
   }
 });
 
-// --- Per–sales-exec breakdown (Admin/Manager) ---
+//  Per–sales-exec breakdown (Admin/Manager) ---
 router.get("/by-owner", auth, requireRole("ADMIN","MANAGER"), async (req, res) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit || "10", 10), 1), 100);
   const execs = await prisma.user.findMany({
