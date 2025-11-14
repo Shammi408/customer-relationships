@@ -1,0 +1,12 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* App-level tweaks */
+:root { color-scheme: light; }
+@layer base {
+  html { @apply font-sans; }
+  body { @apply bg-gray-50 text-gray-900 antialiased; }
+}

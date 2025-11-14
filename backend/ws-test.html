@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <body>
+    <h3>Socket.io Events</h3>
+    <pre id="log"></pre>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+  const log = (msg, obj) => {
+    const el = document.getElementById('log');
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg} ${obj ? JSON.stringify(obj) : ''}\n`;
+  };
+
+  // Don’t force transports; let it fallback automatically
+  const socket = io("http://localhost:3000");
+
+  socket.on("connect", () => log("connected:", { id: socket.id }));
+  socket.on("disconnect", () => log("disconnected"));
+
+  [
+    "lead:created","lead:updated","lead:deleted","lead:statusChanged",
+    "notification:leadAssigned","notification:leadUnassigned","activity:created"
+  ].forEach(evt => socket.on(evt, data => log(evt, data)));
+</script>
+  </body>
+</html>

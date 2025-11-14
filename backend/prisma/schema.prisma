@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  SALES_EXEC
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  WON
+  LOST
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  MEETING
+  STATUS_CHANGE
+}
+
+model User {
+  id         String     @id @default(cuid())
+  name       String
+  email      String     @unique
+  password   String // hash with bcrypt later
+  role       Role       @default(SALES_EXEC)
+  leads      Lead[]     @relation("UserLeads")
+  activities Activity[] @relation("UserActivities")
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  auditLogs  AuditLog[]
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  name       String
+  email      String?    @unique
+  phone      String?
+  status     LeadStatus @default(NEW)
+  owner      User?      @relation("UserLeads", fields: [ownerId], references: [id])
+  ownerId    String?
+  activities Activity[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  note      String?
+  lead      Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId    String
+  user      User?        @relation("UserActivities", fields: [userId], references: [id])
+  userId    String?
+  createdAt DateTime     @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String? // nullable — system actions may not have a user
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String // e.g. "LOGIN", "LEAD_CREATE", "LEAD_UPDATE", "LEAD_DELETE", "LEAD_ASSIGN"
+  resource   String? // e.g. "lead", "activity", "auth"
+  resourceId String? // id of the lead/activity/etc
+  meta       Json? // optional JSON with useful details
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
